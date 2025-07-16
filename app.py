@@ -94,7 +94,7 @@ def main():
     if not history.empty:
         st.subheader("Participant Win Totals Over Time")
         fig2, ax2 = plt.subplots()
-        history.plot(marker='o', ax=ax2)
+        history.plot(marker='', ax=ax2)
         ax2.set_ylabel('Total Wins')
         ax2.set_xlabel('Date')
         st.pyplot(fig2)
