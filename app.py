@@ -82,8 +82,8 @@ def log_win_totals(totals: pd.Series, csv_path: str) -> bool:
 def main():
     # Display banner if available
     if os.path.isfile(BANNER_PATH):
-        st.image(BANNER_PATH, use_container_width=True)
-    
+        st.image(BANNER_PATH, use_column_width=True)
+
     st.title("MLB Wins Pool Tracker")
 
     # 1) Fetch latest standings and calculate totals
@@ -97,11 +97,17 @@ def main():
     else:
         st.info("Win totals for today were already logged.")
 
-    # 3) Optional raw standings table
+    # 3) Participant standings table
+    st.subheader("Participant Standings")
+    df_totals = totals.sort_values(ascending=False).reset_index()
+    df_totals.columns = ["Participant", "Win Total"]
+    st.table(df_totals)
+
+    # 4) Optional raw standings table
     if st.checkbox("Show MLB Standings Table"):
         st.dataframe(standings_df)
 
-    # 4) Bar chart of current totals
+    # 5) Bar chart of current totals
     st.subheader("Current Participant Win Totals")
     fig1, ax1 = plt.subplots()
     totals.sort_values(ascending=False).plot(kind='bar', ax=ax1, rot=45)
@@ -110,7 +116,7 @@ def main():
     st.pyplot(fig1)
     plt.close(fig1)
 
-    # 5) Selectable history window and line chart
+    # 6) Selectable history window and line chart
     history = load_history(CSV_PATH)
     if not history.empty:
         choice = st.radio(
