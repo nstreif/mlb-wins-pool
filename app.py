@@ -67,7 +67,7 @@ def log_win_totals(totals: pd.Series, csv_path: str) -> None:
     combined.to_csv(csv_path, index_label='date')
 
 def main():
-    st.title("MLB Wins Pool Tracker")
+    st.title("Battle for Supemency")
     # Fetch and calculate
     standings_df = fetch_standings(STANDINGS_URL)
     totals = calculate_totals(standings_df)
