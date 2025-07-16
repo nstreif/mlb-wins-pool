@@ -1,0 +1,9 @@
+[server]
+headless = true
+port = $PORT        # for many PaaS (e.g. Heroku, Streamlit Cloud)
+enableCORS = false
+
+[theme]
+primaryColor = "#1f77b4"    # optional brand colors
+backgroundColor = "#ffffff"
+font = "sans serif"
