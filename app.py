@@ -82,7 +82,7 @@ def log_win_totals(totals: pd.Series, csv_path: str) -> bool:
 def main():
     # Display banner if available
     if os.path.isfile(BANNER_PATH):
-        st.image(BANNER_PATH, use_column_width=True)
+        st.image(BANNER_PATH, use_container_width=True)
 
     st.title("MLB Wins Pool Tracker")
 
