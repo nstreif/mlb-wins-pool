@@ -4,7 +4,7 @@
 """
 Streamlit app for fetching MLB standings, automatically logging daily win totals,
 and displaying interactive bar and line charts with selectable history windows.
-Zero-click logging: every page load logs today's totals once.
+Zero-click logging: every page load logs today's totals once, plus banner support.
 """
 import os
 from datetime import datetime
@@ -23,6 +23,7 @@ STANDINGS_URL = (
     "&sortLeagues=103,104,115,114&sortSports=1"
 )
 CSV_PATH = "wins_history.csv"
+BANNER_PATH = "banner.png"  # place your banner image in the repo root
 
 # Participant-to-team index mapping
 PARTICIPANT_TEAMS = {
@@ -79,6 +80,10 @@ def log_win_totals(totals: pd.Series, csv_path: str) -> bool:
 
 
 def main():
+    # Display banner if available
+    if os.path.isfile(BANNER_PATH):
+        st.image(BANNER_PATH, use_column_width=True)
+    
     st.title("MLB Wins Pool Tracker")
 
     # 1) Fetch latest standings and calculate totals
