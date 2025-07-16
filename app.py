@@ -2,8 +2,8 @@
 # coding: utf-8
 
 """
-Streamlit app for fetching MLB standings, displaying and logging participant win totals,
-with interactive bar and line charts.
+Streamlit app for fetching MLB standings, automatically logging daily win totals,
+and displaying interactive bar and line charts with selectable history windows.
 """
 import os
 from datetime import datetime
@@ -44,13 +44,14 @@ def fetch_standings(url: str) -> pd.DataFrame:
             rows.append({'team': team['name'], 'wins': team['wins'], 'losses': team['losses']})
     return pd.DataFrame(rows)
 
-@st.cache_data
+# no caching here so updates appear immediately
 def load_history(csv_path: str) -> pd.DataFrame:
     if os.path.isfile(csv_path) and os.path.getsize(csv_path) > 0:
         df = pd.read_csv(csv_path, parse_dates=['date'])
         df.set_index('date', inplace=True)
         return df
     return pd.DataFrame()
+
 
 def calculate_totals(df: pd.DataFrame) -> pd.Series:
     totals = {}
@@ -59,47 +60,62 @@ def calculate_totals(df: pd.DataFrame) -> pd.Series:
         totals[participant] = df.iloc[valid]['wins'].sum()
     return pd.Series(totals, name='Win Total')
 
+
 def log_win_totals(totals: pd.Series, csv_path: str) -> None:
     today = datetime.today().strftime('%Y-%m-%d')
-    entry = {'date': today, **totals.to_dict()}
-    hist = load_history(csv_path)
-    combined = pd.concat([hist, pd.DataFrame([entry]).set_index(pd.to_datetime([today]))])
-    combined.to_csv(csv_path, index_label='date')
+    history = load_history(csv_path)
+    # append without duplicate-date guard for testing
+    entry = pd.DataFrame([{**totals.to_dict()}], index=[pd.to_datetime(today)])
+    pd.concat([history, entry]).to_csv(csv_path, index_label='date')
+
 
 def main():
-    st.title("Battle for Supemency")
-    # Fetch and calculate
+    st.title("MLB Wins Pool Tracker")
+
+    # fetch and calculate
     standings_df = fetch_standings(STANDINGS_URL)
     totals = calculate_totals(standings_df)
 
-    # Display raw standings table
+    # optional raw standings table
     if st.checkbox("Show MLB Standings Table"):
         st.dataframe(standings_df)
 
-    # Bar chart of current totals
+    # bar chart of current totals
     st.subheader("Current Participant Win Totals")
     fig1, ax1 = plt.subplots()
     totals.sort_values(ascending=False).plot(kind='bar', ax=ax1, rot=45)
     ax1.bar_label(ax1.containers[0])
     ax1.set_ylabel('Win Total')
     st.pyplot(fig1)
+    plt.close(fig1)
 
-    # Log new entry when user clicks button
+    # log today on button click
     if st.button("Log Today's Totals"):
         log_win_totals(totals, CSV_PATH)
-        st.success(f"Logged totals to {CSV_PATH}")
+        st.success("Logged today's totals.")
 
-    # Line chart of history
+    # load history
     history = load_history(CSV_PATH)
     if not history.empty:
-        st.subheader("Participant Win Totals Over Time")
-        fig2, ax2 = plt.subplots()
-        history.plot(marker='', ax=ax2)
+        # user-selectable window
+        choice = st.radio(
+            "Select history window (days)",
+            options=[7, 14, 30],
+            index=2,
+            format_func=lambda x: f"Last {x} days"
+        )
+        window_df = history.last(f"{choice}D")
+
+        st.subheader(f"Participant Win Totals Over the Last {choice} Days")
+        fig2, ax2 = plt.subplots(figsize=(10, 5))
+        window_df.plot(ax=ax2, linewidth=2)
         ax2.set_ylabel('Total Wins')
         ax2.set_xlabel('Date')
+        ax2.grid(True, linestyle='--', alpha=0.5)
         st.pyplot(fig2)
+        plt.close(fig2)
     else:
-        st.info("No historical data found. Click 'Log Today's Totals' to create the history.")
+        st.info("No history found. Click 'Log Today's Totals' to log data.")
 
 if __name__ == "__main__":
     main()
