@@ -4,6 +4,7 @@
 """
 Streamlit app for fetching MLB standings, automatically logging daily win totals,
 and displaying interactive bar and line charts with selectable history windows.
+Zero-click logging: every page load logs today's totals once.
 """
 import os
 from datetime import datetime
@@ -44,7 +45,7 @@ def fetch_standings(url: str) -> pd.DataFrame:
             rows.append({'team': team['name'], 'wins': team['wins'], 'losses': team['losses']})
     return pd.DataFrame(rows)
 
-# no caching here so updates appear immediately
+# no caching on load_history so writes show immediately
 def load_history(csv_path: str) -> pd.DataFrame:
     if os.path.isfile(csv_path) and os.path.getsize(csv_path) > 0:
         df = pd.read_csv(csv_path, parse_dates=['date'])
@@ -61,26 +62,41 @@ def calculate_totals(df: pd.DataFrame) -> pd.Series:
     return pd.Series(totals, name='Win Total')
 
 
-def log_win_totals(totals: pd.Series, csv_path: str) -> None:
-    today = datetime.today().strftime('%Y-%m-%d')
+def log_win_totals(totals: pd.Series, csv_path: str) -> bool:
+    """
+    Append today's totals to CSV if not already present. Return True if added.
+    """
+    today_str = datetime.today().strftime('%Y-%m-%d')
+    today_dt = pd.to_datetime(today_str)
     history = load_history(csv_path)
-    # append without duplicate-date guard for testing
-    entry = pd.DataFrame([{**totals.to_dict()}], index=[pd.to_datetime(today)])
-    pd.concat([history, entry]).to_csv(csv_path, index_label='date')
+
+    if not history.empty and today_dt in history.index:
+        return False
+    entry = pd.DataFrame([totals.to_dict()], index=[today_dt])
+    combined = pd.concat([history, entry])
+    combined.to_csv(csv_path, index_label='date')
+    return True
 
 
 def main():
     st.title("MLB Wins Pool Tracker")
 
-    # fetch and calculate
+    # 1) Fetch latest standings and calculate totals
     standings_df = fetch_standings(STANDINGS_URL)
     totals = calculate_totals(standings_df)
 
-    # optional raw standings table
+    # 2) Auto-log today's totals once per day
+    added = log_win_totals(totals, CSV_PATH)
+    if added:
+        st.success("Today's win totals have been logged automatically.")
+    else:
+        st.info("Win totals for today were already logged.")
+
+    # 3) Optional raw standings table
     if st.checkbox("Show MLB Standings Table"):
         st.dataframe(standings_df)
 
-    # bar chart of current totals
+    # 4) Bar chart of current totals
     st.subheader("Current Participant Win Totals")
     fig1, ax1 = plt.subplots()
     totals.sort_values(ascending=False).plot(kind='bar', ax=ax1, rot=45)
@@ -89,15 +105,9 @@ def main():
     st.pyplot(fig1)
     plt.close(fig1)
 
-    # log today on button click
-    if st.button("Log Today's Totals"):
-        log_win_totals(totals, CSV_PATH)
-        st.success("Logged today's totals.")
-
-    # load history
+    # 5) Selectable history window and line chart
     history = load_history(CSV_PATH)
     if not history.empty:
-        # user-selectable window
         choice = st.radio(
             "Select history window (days)",
             options=[7, 14, 30],
@@ -115,7 +125,7 @@ def main():
         st.pyplot(fig2)
         plt.close(fig2)
     else:
-        st.info("No history found. Click 'Log Today's Totals' to log data.")
+        st.info("No historical data available.")
 
 if __name__ == "__main__":
     main()
