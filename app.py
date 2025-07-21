@@ -89,7 +89,7 @@ def fetch_history(start_date: str, end_date: str) -> pd.DataFrame:
 
 def main():
     if os.path.isfile(BANNER_PATH):
-    st.image(BANNER_PATH, use_container_width=True)
+        st.image(BANNER_PATH, use_container_width=True)
     st.title("MLB Wins Pool Tracker")
     
     today = datetime.today()
