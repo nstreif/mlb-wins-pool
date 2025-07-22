@@ -142,6 +142,14 @@ def main():
             ax2.set_ylabel('Total Wins')
             ax2.set_xlabel('Date')
             st.pyplot(fig2)
+
+            # ⬇️ Insert "last updated" and freshness note here
+            last_update = history.index.max()
+            st.caption(f"Data last updated: {last_update.date()}")
+            st.caption(
+                "Note: Win totals may not update until all games are final and MLB’s API is refreshed. "
+                "Flat lines on the latest days are normal if games are in progress or results are delayed."
+            )
         else:
             st.info("No historical data available for the selected range.")
             
