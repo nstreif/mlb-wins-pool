@@ -35,7 +35,7 @@ PARTICIPANT_TEAMS = {
 
 BANNER_PATH = "banner.png"
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def fetch_standings_for_date(date_str: str) -> pd.DataFrame:
     """Fetch MLB standings for a specific date."""
     url = f"{BASE_URL}&date={date_str}"
@@ -56,7 +56,7 @@ def calculate_totals(df: pd.DataFrame) -> pd.Series:
         totals[participant] = df.iloc[valid]['wins'].sum()
     return pd.Series(totals, name='Win Total')
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def fetch_history(start_date: str, end_date: str) -> pd.DataFrame:
     """Fetch historical win totals for a date range."""
     start = datetime.fromisoformat(start_date).date()
